@@ -2,7 +2,7 @@ import { io, Socket } from 'socket.io-client';
 import { useLeadsStore } from '../store/leadsStore';
 
 // replace with your machine's local IP, e.g. http://192.168.1.5:3000
-const SERVER_URL = 'http://192.168.29.39:3000'; // I'll use 10.0.2.2 for emulator support or 127.0.0.1 for local, maybe just a placeholder.
+const SERVER_URL = 'http://localhost:3000'; // Using localhost for Web testing
 
 let socket: Socket | null = null;
 
