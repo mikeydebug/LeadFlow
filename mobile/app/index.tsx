@@ -1,0 +1,98 @@
+import React, { useEffect, useRef, useCallback } from 'react';
+import { View, Text, StyleSheet, FlatList, StatusBar, Platform } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { useLeadsStore } from '../store/leadsStore';
+import { connectSocket, disconnectSocket } from '../services/socket';
+import { theme } from '../constants/theme';
+import { Lead } from '../types';
+
+import { LiveBadge } from '../components/LiveBadge';
+import { LeadCard } from '../components/LeadCard';
+import { EmptyState } from '../components/EmptyState';
+import { ConnectionBar } from '../components/ConnectionBar';
+
+export default function HomeScreen() {
+  const { leads, isConnected, newLeadId } = useLeadsStore();
+  const flatListRef = useRef<FlatList>(null);
+  const prevLeadsLength = useRef(leads.length);
+
+  useEffect(() => {
+    connectSocket();
+    return () => {
+      disconnectSocket();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (leads.length > prevLeadsLength.current) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+    }
+    prevLeadsLength.current = leads.length;
+  }, [leads.length]);
+
+  const renderItem = useCallback(({ item }: { item: Lead }) => (
+    <LeadCard lead={item} isNew={item.id === newLeadId} />
+  ), [newLeadId]);
+
+  return (
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={theme.bg} />
+      
+      <View style={styles.header}>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>LeadFlow</Text>
+          <LiveBadge isLive={isConnected} />
+        </View>
+        <Text style={styles.subtitle}>
+          {leads.length === 0 ? 'No leads yet' : `${leads.length} leads`}
+        </Text>
+      </View>
+
+      <FlatList
+        ref={flatListRef}
+        data={leads}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        contentContainerStyle={styles.listContent}
+        ListEmptyComponent={EmptyState}
+      />
+
+      <ConnectionBar />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: theme.bg,
+  },
+  header: {
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 16 : 56,
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderColor: theme.border,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  subtitle: {
+    fontSize: 14,
+    color: theme.textMuted,
+    marginTop: 4,
+  },
+  listContent: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 60,
+  },
+});
