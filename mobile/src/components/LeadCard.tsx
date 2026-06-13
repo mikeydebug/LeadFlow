@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import { View, Text, StyleSheet, Platform, Linking, TouchableOpacity } from 'react-native';
+import { FontAwesome } from '@expo/vector-icons';
 import Animated, { FadeInDown, useSharedValue, useAnimatedStyle, withSequence, withTiming } from 'react-native-reanimated';
 import { formatDistanceToNow } from 'date-fns';
 import { Lead } from '../types';
@@ -37,6 +38,15 @@ export const LeadCard = React.memo(({ lead, isNew }: LeadCardProps) => {
     opacity: highlightOpacity.value,
   }));
 
+  const handleWhatsApp = () => {
+    if (lead.phone) {
+      // Remove any non-numeric characters except +
+      const cleanPhone = lead.phone.replace(/[^\d+]/g, '');
+      const message = `Hi ${lead.name || 'there'}, we received your inquiry!`;
+      Linking.openURL(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`);
+    }
+  };
+
   return (
     <Animated.View
       entering={FadeInDown.springify().damping(14).stiffness(120)}
@@ -56,6 +66,11 @@ export const LeadCard = React.memo(({ lead, isNew }: LeadCardProps) => {
           <Text style={styles.name}>{lead.name || 'Unknown'}</Text>
           <Text style={styles.email}>{lead.email || 'No email provided'}</Text>
         </View>
+        {!!lead.phone && (
+          <TouchableOpacity style={styles.waButton} onPress={handleWhatsApp}>
+            <FontAwesome name="whatsapp" size={20} color="#fff" />
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={styles.footer}>
@@ -146,6 +161,15 @@ const styles = StyleSheet.create({
     color: theme.textSub,
     fontSize: 13,
     marginTop: 2,
+  },
+  waButton: {
+    backgroundColor: '#25D366',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
   },
   footer: {
     marginTop: 12,
