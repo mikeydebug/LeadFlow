@@ -1,15 +1,15 @@
 import React, { useEffect, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, StatusBar, Platform, TouchableOpacity } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { useLeadsStore } from '../store/leadsStore';
-import { connectSocket, disconnectSocket } from '../services/socket';
-import { theme } from '../constants/theme';
-import { Lead } from '../types';
+import { useLeadsStore } from '../src/store/leadsStore';
+import { connectSocket, disconnectSocket } from '../src/services/socket';
+import { theme } from '../src/constants/theme';
+import { Lead } from '../src/types';
 
-import { LiveBadge } from '../components/LiveBadge';
-import { LeadCard } from '../components/LeadCard';
-import { EmptyState } from '../components/EmptyState';
-import { ConnectionBar } from '../components/ConnectionBar';
+import { LiveBadge } from '../src/components/LiveBadge';
+import { LeadCard } from '../src/components/LeadCard';
+import { EmptyState } from '../src/components/EmptyState';
+import { ConnectionBar } from '../src/components/ConnectionBar';
 
 export default function HomeScreen() {
   const { leads, isConnected, newLeadId, clearLeads } = useLeadsStore();
@@ -27,6 +27,13 @@ export default function HomeScreen() {
     if (leads.length > prevLeadsLength.current) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
       flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+      if (Platform.OS === 'web') {
+        try {
+          // Play a nice "ding" sound
+          const audio = new window.Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+          audio.play().catch(e => console.log('Audio play failed:', e));
+        } catch (e) {}
+      }
     }
     prevLeadsLength.current = leads.length;
   }, [leads.length]);
