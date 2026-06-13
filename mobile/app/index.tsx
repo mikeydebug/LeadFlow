@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, StatusBar, Platform } from 'react-native';
+import { View, Text, StyleSheet, FlatList, StatusBar, Platform, TouchableOpacity } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useLeadsStore } from '../store/leadsStore';
 import { connectSocket, disconnectSocket } from '../services/socket';
@@ -12,7 +12,7 @@ import { EmptyState } from '../components/EmptyState';
 import { ConnectionBar } from '../components/ConnectionBar';
 
 export default function HomeScreen() {
-  const { leads, isConnected, newLeadId } = useLeadsStore();
+  const { leads, isConnected, newLeadId, clearLeads } = useLeadsStore();
   const flatListRef = useRef<FlatList>(null);
   const prevLeadsLength = useRef(leads.length);
 
@@ -35,6 +35,11 @@ export default function HomeScreen() {
     <LeadCard lead={item} isNew={item.id === newLeadId} />
   ), [newLeadId]);
 
+  const onClear = useCallback(() => {
+    clearLeads();
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }, [clearLeads]);
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={theme.bg} />
@@ -42,7 +47,14 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <View style={styles.titleRow}>
           <Text style={styles.title}>LeadFlow</Text>
-          <LiveBadge isLive={isConnected} />
+          <View style={styles.rightActions}>
+            <LiveBadge isLive={isConnected} />
+            {leads.length > 0 && (
+              <TouchableOpacity onPress={onClear}>
+                <Text style={styles.clearText}>Clear</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
         <Text style={styles.subtitle}>
           {leads.length === 0 ? 'No leads yet' : `${leads.length} leads`}
@@ -56,6 +68,14 @@ export default function HomeScreen() {
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={EmptyState}
+        initialNumToRender={10}
+        maxToRenderPerBatch={5}
+        windowSize={5}
+        getItemLayout={(data, index) => ({
+          length: 100,
+          offset: 100 * index,
+          index,
+        })}
       />
 
       <ConnectionBar />
@@ -79,6 +99,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  rightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  clearText: {
+    color: theme.textMuted,
+    fontSize: 13,
   },
   title: {
     fontSize: 24,

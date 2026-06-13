@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, useSharedValue, useAnimatedStyle, withSequence, withTiming } from 'react-native-reanimated';
 import { formatDistanceToNow } from 'date-fns';
 import { Lead } from '../types';
 import { theme } from '../constants/theme';
@@ -13,15 +13,39 @@ interface LeadCardProps {
 export const LeadCard = React.memo(({ lead, isNew }: LeadCardProps) => {
   const avatarLetter = lead.name ? lead.name.charAt(0).toUpperCase() : '?';
   const displayFormId = lead.formId.length > 12 ? `${lead.formId.substring(0, 12)}...` : lead.formId;
+  const [, setTick] = useState(0);
+
+  const highlightOpacity = useSharedValue(0);
+
+  useEffect(() => {
+    if (isNew) {
+      highlightOpacity.value = withSequence(
+        withTiming(0.2, { duration: 500 }),
+        withTiming(0, { duration: 3000 })
+      );
+    }
+  }, [isNew, highlightOpacity]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTick((t) => t + 1);
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const overlayStyle = useAnimatedStyle(() => ({
+    opacity: highlightOpacity.value,
+  }));
 
   return (
     <Animated.View
       entering={FadeInDown.springify().damping(14).stiffness(120)}
       style={[
         styles.card,
-        isNew && styles.newCard,
+        isNew && styles.newCardStyles,
       ]}
     >
+      <Animated.View style={[StyleSheet.absoluteFill, styles.highlightOverlay, overlayStyle]} pointerEvents="none" />
       <View style={styles.leftBorder} />
       
       <View style={styles.header}>
@@ -65,8 +89,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     overflow: 'hidden',
   },
-  newCard: {
-    backgroundColor: theme.accentDim,
+  newCardStyles: {
     ...Platform.select({
       ios: {
         shadowColor: theme.accent,
@@ -79,6 +102,9 @@ const styles = StyleSheet.create({
         shadowColor: theme.accent,
       },
     }),
+  },
+  highlightOverlay: {
+    backgroundColor: theme.accent,
   },
   leftBorder: {
     position: 'absolute',

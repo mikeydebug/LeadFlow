@@ -1,40 +1,43 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, withRepeat, withTiming } from 'react-native-reanimated';
 import { useLeadsStore } from '../store/leadsStore';
 import { theme } from '../constants/theme';
 
 export const ConnectionBar = () => {
   const { isConnected, leads } = useLeadsStore();
-  const opacity = useRef(new Animated.Value(1)).current;
+  
+  const height = useSharedValue(0);
+  const opacity = useSharedValue(1);
 
   useEffect(() => {
+    height.value = withSpring(isConnected ? 0 : 44, {
+      damping: 15,
+      stiffness: 100,
+    });
+    
     if (!isConnected) {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(opacity, {
-            toValue: 0.2,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-          Animated.timing(opacity, {
-            toValue: 1,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
+      opacity.value = withRepeat(withTiming(0.2, { duration: 800 }), -1, true);
     } else {
-      opacity.setValue(1);
+      opacity.value = 1;
     }
   }, [isConnected]);
 
+  const containerStyle = useAnimatedStyle(() => ({
+    height: height.value,
+  }));
+
+  const dotStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+  }));
+
   return (
-    <View style={styles.container}>
+    <Animated.View style={[styles.container, containerStyle]}>
       <Animated.View 
         style={[
           styles.dot, 
           { backgroundColor: isConnected ? theme.green : theme.red },
-          !isConnected && { opacity }
+          dotStyle
         ]} 
       />
       <Text style={[styles.text, !isConnected && styles.textError]}>
@@ -42,7 +45,7 @@ export const ConnectionBar = () => {
           ? `Connected · ${leads.length} leads received` 
           : 'Reconnecting to server...'}
       </Text>
-    </View>
+    </Animated.View>
   );
 };
 
@@ -52,13 +55,13 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 40,
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: theme.bgCard,
     borderTopWidth: 1,
     borderTopColor: theme.border,
+    overflow: 'hidden',
   },
   dot: {
     width: 8,
