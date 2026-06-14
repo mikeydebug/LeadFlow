@@ -38,17 +38,29 @@ router.post('/', async (req, res) => {
             const lead: Lead = {
               id: leadgenId,
               timestamp: Date.now(),
-              name: details.name || 'Unknown',
-              email: details.email || 'Unknown',
-              phone: details.phone || 'Unknown',
-              formId: value.form_id || details.formId || '',
-              adId: value.ad_id || details.adId || '',
-              pageId: value.page_id || details.pageId || '',
+              name: details.name || 'New Lead',
+              email: details.email || 'N/A',
+              phone: details.phone || 'N/A',
+              formId: value.form_id || '',
+              adId: value.ad_id || '',
+              pageId: value.page_id || '',
             };
 
             broadcastLead(lead);
           } catch (err) {
             console.error('Error processing lead:', err);
+            // Broadcast anyway with available data
+            const fallbackLead: Lead = {
+              id: leadgenId,
+              timestamp: Date.now(),
+              name: 'New Lead',
+              email: 'N/A',
+              phone: 'N/A',
+              formId: value.form_id || '',
+              adId: value.ad_id || '',
+              pageId: value.page_id || '',
+            };
+            broadcastLead(fallbackLead);
           }
         }
       }
