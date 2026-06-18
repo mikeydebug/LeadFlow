@@ -5,6 +5,7 @@ interface LeadsState {
   leads: Lead[];
   isConnected: boolean;
   newLeadId: string | null;
+  setLeads: (leads: Lead[]) => void;
   addLead: (lead: Lead) => void;
   setConnected: (val: boolean) => void;
   clearLeads: () => void;
@@ -14,6 +15,8 @@ export const useLeadsStore = create<LeadsState>((set) => ({
   leads: [],
   isConnected: false,
   newLeadId: null,
+
+  setLeads: (leads) => set({ leads }),
 
   addLead: (lead) => {
     set((state) => {

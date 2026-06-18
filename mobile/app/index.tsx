@@ -12,11 +12,21 @@ import { EmptyState } from '../src/components/EmptyState';
 import { ConnectionBar } from '../src/components/ConnectionBar';
 
 export default function HomeScreen() {
-  const { leads, isConnected, newLeadId, clearLeads } = useLeadsStore();
+  const { leads, isConnected, newLeadId, clearLeads, setLeads } = useLeadsStore();
   const flatListRef = useRef<FlatList>(null);
   const prevLeadsLength = useRef(leads.length);
 
   useEffect(() => {
+    // Fetch initial leads from database
+    fetch('http://localhost:3000/leads')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setLeads(data);
+        }
+      })
+      .catch(err => console.error('Failed to fetch initial leads:', err));
+
     connectSocket();
     return () => {
       disconnectSocket();

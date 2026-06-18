@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { fetchLeadDetails } from '../services/metaApi';
 import { broadcastLead } from '../services/socket';
 import { Lead } from '../types';
+import { LeadModel } from '../models/Lead';
 
 const router = Router();
 
@@ -46,6 +47,16 @@ router.post('/', async (req, res) => {
               pageId: value.page_id || '',
             };
 
+            try {
+              await LeadModel.findOneAndUpdate(
+                { id: lead.id },
+                lead,
+                { upsert: true, new: true }
+              );
+            } catch (dbError) {
+              console.error('Error saving to MongoDB:', dbError);
+            }
+
             broadcastLead(lead);
           } catch (err) {
             console.error('Error processing lead:', err);
@@ -82,6 +93,12 @@ if (process.env.NODE_ENV !== 'production') {
       adId: 'test_ad',
       pageId: 'test_page',
     };
+
+    LeadModel.findOneAndUpdate(
+      { id: lead.id },
+      lead,
+      { upsert: true, new: true }
+    ).catch(err => console.error('DB Insert Error:', err));
 
     broadcastLead(lead);
     res.json({ success: true, lead });
